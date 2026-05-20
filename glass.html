@@ -6,36 +6,63 @@
     <title>글래스 스크린</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: black; overflow: hidden; }
-        iframe { width: 100vw; height: 100vh; border: none; }
+        #player { width: 100vw; height: 100vh; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
 </head>
 <body>
-    <div id="player-container"></div>
+    <div id="player"></div>
 
     <script>
-        // 파이어베이스 연결 설정
         const firebaseConfig = { databaseURL: "https://mrbd-bedd7-default-rtdb.firebaseio.com/" };
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        // 파이어베이스에서 영상 ID가 바뀌면 화면을 갱신하는 로직
-        database.ref('current_video').on('value', (snapshot) => {
-            const videoId = snapshot.val();
-            if (videoId) {
-                const container = document.getElementById('player-container');
-                
-                // mute 옵션을 완전히 제거하여 기기 자체 기본 볼륨 설정을 따릅니다.
-                container.innerHTML = `
-                    <iframe 
-                        src="https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1" 
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                        allowfullscreen>
-                    </iframe>
-                `;
-            }
-        });
+        let player;
+        let currentVideoId = "";
+
+        // 유튜브 API 준비 완료 시 실행
+        function onYouTubeIframeAPIReady() {
+            // 1. 영상 변경 감지
+            database.ref('current_video').on('value', (snapshot) => {
+                const videoId = snapshot.val();
+                if (!videoId) return;
+
+                if (!player) {
+                    player = new YT.Player('player', {
+                        videoId: videoId,
+                        playerVars: { 'autoplay': 1, 'controls': 1 },
+                        events: { 'onReady': onPlayerReady }
+                    });
+                    currentVideoId = videoId;
+                } else if (currentVideoId !== videoId) {
+                    player.loadVideoById({ videoId: videoId });
+                    currentVideoId = videoId;
+                }
+            });
+
+            // 2. 리모컨 볼륨 조절 명령 감지
+            database.ref('volume_control').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (!data || !player) return;
+
+                if (data.mute === true) {
+                    player.mute();
+                } else if (data.mute === false) {
+                    player.unMute();
+                }
+
+                if (data.volume !== undefined) {
+                    player.setVolume(data.volume);
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            event.target.playVideo();
+        }
     </script>
 </body>
 </html>
