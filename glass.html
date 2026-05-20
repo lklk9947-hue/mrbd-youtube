@@ -20,13 +20,13 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        // 파이어베이스에서 영상 ID를 가져오면 화면을 새로 그려주는 로직
+        // 파이어베이스에서 영상 ID가 바뀌면 화면을 갱신하는 로직
         database.ref('current_video').on('value', (snapshot) => {
             const videoId = snapshot.val();
             if (videoId) {
                 const container = document.getElementById('player-container');
                 
-                // &mute=1 옵션을 제거하여 유튜브 자체 기본 볼륨 설정을 따르도록 수정
+                // mute 옵션을 완전히 제거하여 기기 자체 기본 볼륨 설정을 따릅니다.
                 container.innerHTML = `
                     <iframe 
                         src="https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1" 
