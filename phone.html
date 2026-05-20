@@ -5,16 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>글래스 리모컨</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 40px 20px; background-color: #f4f4f9; }
+        body { font-family: sans-serif; text-align: center; padding: 50px 20px; background-color: #f4f4f9; }
         h2 { color: #333; }
         input { width: 80%; max-width: 400px; padding: 15px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 20px; }
-        button { padding: 15px 30px; font-size: 16px; background-color: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin: 5px; }
+        button { padding: 15px 30px; font-size: 16px; background-color: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
         button:hover { background-color: #0056b3; }
-        .vol-btn { background-color: #28a745; }
-        .vol-btn:hover { background-color: #218838; }
-        .mute-btn { background-color: #dc3545; }
-        .mute-btn:hover { background-color: #bd2130; }
-        .vol-status { font-size: 18px; font-weight: bold; margin: 15px 0; color: #555; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -22,26 +17,19 @@
 <body>
 
     <h2>🕶️ 글래스 리모컨</h2>
-    <p>유튜브 영상 주소(URL) 또는 ID 입력</p>
-    <input type="text" id="video-input" placeholder="https://www.youtube.com/watch?v=..."><br>
+    <p>유튜브 영상 주소(URL) 또는 ID를 입력하세요</p>
+    
+    <input type="text" id="video-input" placeholder="https://www.youtube.com/watch?v=...">
+    <br>
     <button onclick="sendVideo()">영상 전송하기</button>
 
-    <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ccc;">
-
-    <h3>🔊 오디오 원격 제어</h3>
-    <div class="vol-status">현재 설정 볼륨: <span id="vol-display">50</span>%</div>
-    <button class="vol-btn" onclick="changeVolume(10)">▲ 볼륨 키우기 (+10)</button>
-    <button class="vol-btn" onclick="changeVolume(-10)">▼ 볼륨 줄이기 (-10)</button><br>
-    <button class="mute-btn" onclick="setMute(false)">🔊 음소거 해제 (소리 켜기)</button>
-    <button class="mute-btn" onclick="setMute(true)">🔇 음소거 (소리 끄기)</button>
-
     <script>
+        // 파이어베이스 설정
         const firebaseConfig = { databaseURL: "https://mrbd-bedd7-default-rtdb.firebaseio.com/" };
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        let currentVolume = 50; // 기본 시작 볼륨값
-
+        // 유튜브 링크에서 ID만 추출하는 함수
         function extractVideoId(url) {
             const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
             const match = url.match(regExp);
@@ -50,35 +38,23 @@
 
         function sendVideo() {
             const inputVal = document.getElementById('video-input').value;
-            if (!inputVal) return alert("유튜브 링크를 입력해 주세요!");
+            
+            if (!inputVal) {
+                alert("유튜브 링크를 입력해 주세요!");
+                return;
+            }
+
+            // 전체 링크가 들어와도 자동으로 ID만 정제함
             const finalVideoId = extractVideoId(inputVal);
 
             database.ref('current_video').set(finalVideoId)
                 .then(() => {
                     alert("안경으로 영상을 보냈습니다!");
-                    document.getElementById('video-input').value = "";
+                    document.getElementById('video-input').value = ""; // 입력창 비우기
+                })
+                .catch((error) => {
+                    alert("전송 실패: " + error.message);
                 });
-        }
-
-        // 볼륨 변경 함수
-        function changeVolume(amount) {
-            currentVolume += amount;
-            if (currentVolume > 100) currentVolume = 100;
-            if (currentVolume < 0) currentVolume = 0;
-            
-            document.getElementById('vol-display').innerText = currentVolume;
-
-            database.ref('volume_control').set({
-                volume: currentVolume,
-                mute: false
-            });
-        }
-
-        // 음소거 설정 함수
-        function setMute(isMute) {
-            database.ref('volume_control').update({
-                mute: isMute
-            });
         }
     </script>
 </body>
