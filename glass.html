@@ -1,28 +1,41 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>글래스 스크린</title>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: black; overflow: hidden; }
+        iframe { width: 100vw; height: 100vh; border: none; }
+    </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script src="https://www.youtube.com/iframe_api"></script>
-    <style>body{margin:0; background:black;} #player{width:100vw; height:100vh;}</style>
 </head>
 <body>
-    <div id="player"></div>
+    <div id="player-container"></div>
+
     <script>
-        const db = firebase.initializeApp({databaseURL: "https://mrbd-bedd7-default-rtdb.firebaseio.com/"}).database();
-        let player;
-        function onYouTubeIframeAPIReady() {
-            db.ref('current_video').on('value', (s) => {
-                const vid = s.val();
-                if(!player) player = new YT.Player('player', {videoId: vid, playerVars: {autoplay: 1}});
-                else player.loadVideoById(vid);
-            });
-            db.ref('control_cmd').on('value', (s) => {
-                const cmd = s.val();
-                if(cmd.action === 'play') player.playVideo();
-                else if(cmd.action === 'pause') player.pauseVideo();
-            });
-        }
+        // 파이어베이스 연결 설정
+        const firebaseConfig = { databaseURL: "https://mrbd-bedd7-default-rtdb.firebaseio.com/" };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // 파이어베이스에서 영상 ID가 바뀌면 화면을 갱신하는 로직
+        database.ref('current_video').on('value', (snapshot) => {
+            const videoId = snapshot.val();
+            if (videoId) {
+                const container = document.getElementById('player-container');
+                
+                // mute 옵션을 완전히 제거하여 기기 자체 기본 볼륨 설정을 따릅니다.
+                container.innerHTML = `
+                    <iframe 
+                        src="https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen>
+                    </iframe>
+                `;
+            }
+        });
     </script>
 </body>
 </html>
