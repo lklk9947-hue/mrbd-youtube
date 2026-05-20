@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>글래스 스크린</title>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: black; overflow: hidden; }
+        iframe { width: 100vw; height: 100vh; border: none; }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+<body>
+    <div id="player-container"></div>
+
+    <script>
+        // 파이어베이스 연결 설정
+        const firebaseConfig = { databaseURL: "https://mrbd-bedd7-default-rtdb.firebaseio.com/" };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // 파이어베이스에서 영상 ID를 가져오면 화면을 새로 그려주는 로직
+        database.ref('current_video').on('value', (snapshot) => {
+            const videoId = snapshot.val();
+            if (videoId) {
+                const container = document.getElementById('player-container');
+                
+                // 내 컴퓨터 파일(file://) 환경에서도 유튜브 구성 오류(153)가 나지 않는 가장 안전한 기본 주소 방식
+                container.innerHTML = `
+                    <iframe 
+                        src="https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=1" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen>
+                    </iframe>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
