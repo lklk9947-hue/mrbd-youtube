@@ -6,34 +6,47 @@
     <title>글래스 스크린</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: black; overflow: hidden; }
-        iframe { width: 100vw; height: 100vh; border: none; }
+        #player-container { width: 100vw; height: 100vh; }
+        iframe { width: 100%; height: 100%; border: none; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 <body>
+
     <div id="player-container"></div>
 
     <script>
-        // 파이어베이스 연결 설정
         const firebaseConfig = { databaseURL: "https://mrbd-bedd7-default-rtdb.firebaseio.com/" };
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        // 파이어베이스에서 영상 ID가 바뀌면 화면을 갱신하는 로직
+        // 1. 영상 ID 변경 감지 (영상 로드)
         database.ref('current_video').on('value', (snapshot) => {
             const videoId = snapshot.val();
             if (videoId) {
                 const container = document.getElementById('player-container');
-                
-                // mute 옵션을 완전히 제거하여 기기 자체 기본 볼륨 설정을 따릅니다.
+                // enablejsapi=1 파라미터를 추가해야 제어가 가능합니다.
                 container.innerHTML = `
-                    <iframe 
-                        src="https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1" 
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                        allowfullscreen>
-                    </iframe>
-                `;
+                    <iframe id="yt-player" 
+                            src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&controls=1" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen>
+                    </iframe>`;
+            }
+        });
+
+        // 2. 재생/일시정지 명령 감지 (PostMessage 방식)
+        database.ref('video_state').on('value', (snapshot) => {
+            const state = snapshot.val();
+            const iframe = document.getElementById('yt-player');
+            if (iframe && iframe.contentWindow) {
+                const command = (state === 'play') ? 'playVideo' : 'pauseVideo';
+                iframe.contentWindow.postMessage(JSON.stringify({
+                    'event': 'command',
+                    'func': command,
+                    'args': ''
+                }), '*');
             }
         });
     </script>
