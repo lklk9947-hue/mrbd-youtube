@@ -1,23 +1,27 @@
 <!DOCTYPE html>
 <html>
-<body>
-    <input id="vid" placeholder="유튜브 링크 입력">
-    <button onclick="sendVid()">전송</button>
-    <hr>
-    <button onclick="sendCmd('play')">▶ 재생</button>
-    <button onclick="sendCmd('pause')">⏸ 일시정지</button>
-
+<head>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <style>body{margin:0; background:black;} #player{width:100vw; height:100vh;}</style>
+</head>
+<body>
+    <div id="player"></div>
     <script>
         const db = firebase.initializeApp({databaseURL: "https://mrbd-bedd7-default-rtdb.firebaseio.com/"}).database();
-        function sendVid() {
-            const val = document.getElementById('vid').value;
-            const id = val.split('v=')[1]?.split('&')[0] || val;
-            db.ref('current_video').set(id);
-        }
-        function sendCmd(act) {
-            db.ref('control_cmd').set({action: act, time: Date.now()});
+        let player;
+        function onYouTubeIframeAPIReady() {
+            db.ref('current_video').on('value', (s) => {
+                const vid = s.val();
+                if(!player) player = new YT.Player('player', {videoId: vid, playerVars: {autoplay: 1}});
+                else player.loadVideoById(vid);
+            });
+            db.ref('control_cmd').on('value', (s) => {
+                const cmd = s.val();
+                if(cmd.action === 'play') player.playVideo();
+                else if(cmd.action === 'pause') player.pauseVideo();
+            });
         }
     </script>
 </body>
