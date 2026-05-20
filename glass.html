@@ -26,10 +26,10 @@
             if (videoId) {
                 const container = document.getElementById('player-container');
                 
-                // 내 컴퓨터 파일(file://) 환경에서도 유튜브 구성 오류(153)가 나지 않는 가장 안전한 기본 주소 방식
+                // &mute=1 옵션을 제거하여 유튜브 자체 기본 볼륨 설정을 따르도록 수정
                 container.innerHTML = `
                     <iframe 
-                        src="https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=1" 
+                        src="https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1" 
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                         allowfullscreen>
                     </iframe>
