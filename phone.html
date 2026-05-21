@@ -11,7 +11,6 @@
         .btn-group { margin-top: 20px; }
         button { padding: 15px 30px; font-size: 16px; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin: 5px; }
         .btn-send { background-color: #007bff; }
-        .btn-send:hover { background-color: #0056b3; }
         .btn-play { background-color: #28a745; }
         .btn-pause { background-color: #dc3545; }
     </style>
@@ -27,52 +26,49 @@
     <button class="btn-send" onclick="sendVideo()">영상 전송하기</button>
 
     <div class="btn-group">
-        <button class="btn-play" onclick="sendState('play')">▶ 재생</button>
-        <button class="btn-pause" onclick="sendState('pause')">⏸ 일시정지</button>
+        <button id="toggle-btn" class="btn-play" onclick="toggleState()">▶ 재생</button>
     </div>
 
     <script>
-        // 파이어베이스 설정
-        const firebaseConfig = {
-            databaseURL: "https://mrbd-bedd7-default-rtdb.firebaseio.com/"
-        };
+        const firebaseConfig = { databaseURL: "https://mrbd-bedd7-default-rtdb.firebaseio.com/" };
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
+        
+        // 현재 상태 추적 변수
+        let isPlaying = false;
 
-        // 유튜브 링크에서 ID만 추출하는 함수
         function extractVideoId(url) {
             const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
             const match = url.match(regExp);
             return (match && match[2].length === 11) ? match[2] : url.trim();
         }
 
-        // 영상 전송 함수
         function sendVideo() {
             const inputVal = document.getElementById('video-input').value;
-            if (!inputVal) {
-                alert("유튜브 링크를 입력해 주세요!");
-                return;
-            }
+            if (!inputVal) { alert("유튜브 링크를 입력해 주세요!"); return; }
             const finalVideoId = extractVideoId(inputVal);
             database.ref('current_video').set(finalVideoId)
                 .then(() => {
                     alert("안경으로 영상을 보냈습니다!");
                     document.getElementById('video-input').value = "";
                 })
-                .catch((error) => {
-                    alert("전송 실패: " + error.message);
-                });
+                .catch((error) => { alert("전송 실패: " + error.message); });
         }
 
-        // 재생/일시정지 상태 전송 함수
-        function sendState(state) {
-            database.ref('video_state').set(state)
+        // 재생/일시정지 토글 함수
+        function toggleState() {
+            const btn = document.getElementById('toggle-btn');
+            const newState = isPlaying ? 'pause' : 'play';
+            
+            database.ref('video_state').set(newState)
                 .then(() => {
-                    console.log("상태 변경 요청: " + state);
+                    isPlaying = !isPlaying;
+                    // 버튼 상태 변경
+                    btn.textContent = isPlaying ? '⏸ 일시정지' : '▶ 재생';
+                    btn.className = isPlaying ? 'btn-pause' : 'btn-play';
+                    console.log("상태 변경: " + newState);
                 })
-                .catch((error) => {
-                    alert("상태 변경 실패: " + error.message);
-                });
+                .catch((error) => { alert("상태 변경 실패: " + error.message); });
         }
     </script>
 </body>
