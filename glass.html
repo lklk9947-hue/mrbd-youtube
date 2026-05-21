@@ -65,16 +65,25 @@
             const playerEl = document.getElementById('player');
             playerEl.focus();
 
-            // 터치패드/Neural Band 입력을 Enter 키로 처리하여 재생/일시정지 토글
+            // 터치패드/Neural Band 입력을 Enter/Arrow 키로 처리
             document.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    if (player && typeof player.getPlayerState === 'function') {
-                        const state = player.getPlayerState();
-                        if (state === YT.PlayerState.PLAYING) {
-                            player.pauseVideo();
-                        } else {
-                            player.playVideo();
-                        }
+                if (player && typeof player.getPlayerState === 'function') {
+                    const currentTime = player.getCurrentTime();
+                    
+                    switch(e.key) {
+                        case 'Enter': // 재생/일시정지 토글
+                            const state = player.getPlayerState();
+                            if (state === YT.PlayerState.PLAYING) player.pauseVideo();
+                            else player.playVideo();
+                            break;
+                            
+                        case 'ArrowRight': // 10초 앞으로
+                            player.seekTo(currentTime + 10, true);
+                            break;
+                            
+                        case 'ArrowLeft': // 10초 뒤로
+                            player.seekTo(currentTime - 10, true);
+                            break;
                     }
                 }
             });
