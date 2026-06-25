@@ -80,9 +80,21 @@
             });
         }
 
-        // ⭐ 딱 이것만 추가했습니다: 더블 클릭 시 포커스 복구
+        // ⭐ 더블 클릭 시 화면 정가운데를 클릭 신호로 깨워주는 코드만 결합함
         document.addEventListener('dblclick', function() {
-            document.getElementById('player').focus();
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+            const clickEvent = new MouseEvent('click', {
+                view: window,
+                bubbles: true,
+                cancelable: true,
+                clientX: centerX,
+                clientY: centerY
+            });
+            const targetEl = document.elementFromPoint(centerX, centerY);
+            if (targetEl) {
+                targetEl.dispatchEvent(clickEvent);
+            }
         });
     </script>
 </body>
