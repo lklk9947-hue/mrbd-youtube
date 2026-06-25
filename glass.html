@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <title>글래스 스크린</title>
     <style>
-        body, html { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            background-color: black; overflow: hidden; 
-        }
-        #player { width: 100vw; height: 100vh; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: black; overflow: hidden; }
+        #player { width: 100vw; height: 100vh; outline: none; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -18,71 +15,48 @@
     <div id="player" tabindex="0"></div>
 
     <script>
-        // 파이어베이스 설정
         const firebaseConfig = { databaseURL: "https://mrbd-bedd7-default-rtdb.firebaseio.com/" };
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
+        if (!firebase.firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         let player;
 
-        // 유튜브 API 준비
         function onYouTubeIframeAPIReady() {
-            // 1. 영상 변경 감지
-            database.ref('current_video').on('value', (snapshot) => {
-                const videoId = snapshot.val();
-                if (!videoId) return;
-
-                if (!player) {
-                    player = new YT.Player('player', {
-                        height: '100%', 
-                        width: '100%', 
-                        videoId: videoId,
-                        playerVars: { 'autoplay': 1 }
-                    });
-                } else {
-                    player.loadVideoById(videoId);
-                }
+            database.ref('current_video').on('value', (s) => {
+                const vid = s.val();
+                if(!vid) return;
+                if(!player) player = new YT.Player('player', {videoId: vid, playerVars: {autoplay: 1}});
+                else player.loadVideoById(vid);
             });
-
-            // 2. 재생/일시정지 명령 감지
-            database.ref('video_state').on('value', (snapshot) => {
-                const state = snapshot.val();
-                if (!player) return;
-                if (state === 'play') {
-                    player.playVideo();
-                } else if (state === 'pause') {
-                    player.pauseVideo();
-                }
+            database.ref('video_state').on('value', (s) => {
+                if(s.val() === 'play') player.playVideo();
+                else if(s.val() === 'pause') player.pauseVideo();
             });
         }
 
-        // 3. 어떤 방식으로 클릭해도 토글되게 만드는 강력한 이벤트 리스너
-        function toggleVideo() {
-            if (player && typeof player.getPlayerState === 'function') {
-                const state = player.getPlayerState();
-                if (state === YT.PlayerState.PLAYING) {
-                    player.pauseVideo();
-                } else {
-                    player.playVideo();
-                }
-            }
-        }
-
-        // 클릭 이벤트 (화면 아무곳이나 터치/클릭 시)
-        document.addEventListener('click', toggleVideo);
-
-        // 밴드 꼬집기 등 Enter 키 이벤트
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                toggleVideo();
+        // 1. 일반 클릭: 재생/일시정지 토글
+        document.addEventListener('click', () => {
+            if (player && player.getPlayerState) {
+                if (player.getPlayerState() === 1) player.pauseVideo();
+                else player.playVideo();
             }
         });
 
-        // 브라우저 로드 시 포커스 강제 이동
-        window.onload = () => {
-            document.getElementById('player').focus();
-        };
+        // 2. 더블 클릭: 포커스 강제 복구 (포커스 탈출 문제 해결)
+        document.addEventListener('dblclick', () => {
+            const playerDiv = document.getElementById('player');
+            playerDiv.focus(); // 포커스를 다시 영상 영역으로!
+            console.log("포커스 복구 완료");
+        });
+
+        // 3. 밴드 입력용 엔터키 대응
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                if (player && player.getPlayerState) {
+                    if (player.getPlayerState() === 1) player.pauseVideo();
+                    else player.playVideo();
+                }
+            }
+        });
     </script>
 </body>
 </html>
