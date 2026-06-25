@@ -5,6 +5,7 @@
     <title>글래스 스크린</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: black; overflow: hidden; }
+        /* outline: none을 추가해 포커스 시 생기는 테두리 방지 */
         #player { width: 100vw; height: 100vh; outline: none; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -15,48 +16,76 @@
     <div id="player" tabindex="0"></div>
 
     <script>
+        // 파이어베이스 설정 (오류 났던 부분 완벽 복구)
         const firebaseConfig = { databaseURL: "https://mrbd-bedd7-default-rtdb.firebaseio.com/" };
-        if (!firebase.firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
         const database = firebase.database();
         let player;
 
+        // 유튜브 API 준비
         function onYouTubeIframeAPIReady() {
-            database.ref('current_video').on('value', (s) => {
-                const vid = s.val();
-                if(!vid) return;
-                if(!player) player = new YT.Player('player', {videoId: vid, playerVars: {autoplay: 1}});
-                else player.loadVideoById(vid);
+            // 1. 영상 변경 감지
+            database.ref('current_video').on('value', (snapshot) => {
+                const videoId = snapshot.val();
+                if (!videoId) return;
+
+                if (!player) {
+                    player = new YT.Player('player', {
+                        height: '100%', 
+                        width: '100%', 
+                        videoId: videoId,
+                        playerVars: { 'autoplay': 1 }
+                    });
+                } else {
+                    player.loadVideoById(videoId);
+                }
             });
-            database.ref('video_state').on('value', (s) => {
-                if(s.val() === 'play') player.playVideo();
-                else if(s.val() === 'pause') player.pauseVideo();
+
+            // 2. 재생/일시정지 명령 감지
+            database.ref('video_state').on('value', (snapshot) => {
+                const state = snapshot.val();
+                if (!player) return;
+                if (state === 'play') {
+                    player.playVideo();
+                } else if (state === 'pause') {
+                    player.pauseVideo();
+                }
             });
         }
 
-        // 1. 일반 클릭: 재생/일시정지 토글
-        document.addEventListener('click', () => {
-            if (player && player.getPlayerState) {
-                if (player.getPlayerState() === 1) player.pauseVideo();
-                else player.playVideo();
-            }
-        });
-
-        // 2. 더블 클릭: 포커스 강제 복구 (포커스 탈출 문제 해결)
-        document.addEventListener('dblclick', () => {
-            const playerDiv = document.getElementById('player');
-            playerDiv.focus(); // 포커스를 다시 영상 영역으로!
-            console.log("포커스 복구 완료");
-        });
-
-        // 3. 밴드 입력용 엔터키 대응
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                if (player && player.getPlayerState) {
-                    if (player.getPlayerState() === 1) player.pauseVideo();
-                    else player.playVideo();
+        // 3. 토글 함수 (기존과 동일하게 유지)
+        function toggleVideo() {
+            if (player && typeof player.getPlayerState === 'function') {
+                const state = player.getPlayerState();
+                if (state === YT.PlayerState.PLAYING) {
+                    player.pauseVideo();
+                } else {
+                    player.playVideo();
                 }
             }
+        }
+
+        // 일반 클릭 이벤트
+        document.addEventListener('click', toggleVideo);
+
+        // Enter 키 (밴드 꼬집기) 이벤트
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                toggleVideo();
+            }
         });
+
+        // ⭐ 이번에 추가된 유일한 기능: 빠르게 두 번 터치 시 포커스 복구
+        document.addEventListener('dblclick', function() {
+            document.getElementById('player').focus();
+        });
+
+        // 브라우저 로드 시 포커스 강제 이동
+        window.onload = () => {
+            document.getElementById('player').focus();
+        };
     </script>
 </body>
 </html>
