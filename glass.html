@@ -5,80 +5,84 @@
     <title>글래스 스크린</title>
     <style>
         body, html { 
-            margin: 0; padding: 0; 
-            width: 100%; height: 100%; 
-            background-color: black; 
-            overflow: hidden; 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background-color: black; overflow: hidden; 
         }
-        #player { 
-            width: 100vw; height: 100vh; 
-        }
-        /* 안경에서 선택된 요소임을 보여주는 테두리 스타일 */
-        .focusable:focus {
-            outline: none;
-            border: 4px solid #00d4ff;
-        }
+        #player { width: 100vw; height: 100vh; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
 </head>
 <body>
-
-    <div id="player" tabindex="0" class="focusable"></div>
+    <div id="player" tabindex="0"></div>
 
     <script>
+        // 파이어베이스 설정
         const firebaseConfig = { databaseURL: "https://mrbd-bedd7-default-rtdb.firebaseio.com/" };
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
         const database = firebase.database();
         let player;
 
-        // 1. YouTube IFrame API 로드
-        const tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        document.head.appendChild(tag);
-
+        // 유튜브 API 준비
         function onYouTubeIframeAPIReady() {
-            // 영상 ID 변경 감지 및 플레이어 생성/로드
+            // 1. 영상 변경 감지
             database.ref('current_video').on('value', (snapshot) => {
                 const videoId = snapshot.val();
                 if (!videoId) return;
+
                 if (!player) {
                     player = new YT.Player('player', {
                         height: '100%', 
                         width: '100%', 
-                        videoId: videoId 
+                        videoId: videoId,
+                        playerVars: { 'autoplay': 1 }
                     });
                 } else {
                     player.loadVideoById(videoId);
                 }
             });
 
-            // 재생/일시정지 명령 감지
+            // 2. 재생/일시정지 명령 감지
             database.ref('video_state').on('value', (snapshot) => {
                 const state = snapshot.val();
                 if (!player) return;
-                if (state === 'play') { player.playVideo(); }
-                else if (state === 'pause') { player.pauseVideo(); }
-            });
-
-            // 포커스 강제 설정
-            const playerEl = document.getElementById('player');
-            playerEl.focus();
-
-            // 터치패드/Neural Band 입력을 Enter 키로 처리하여 재생/일시정지 토글
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    if (player && typeof player.getPlayerState === 'function') {
-                        const state = player.getPlayerState();
-                        if (state === YT.PlayerState.PLAYING) {
-                            player.pauseVideo();
-                        } else {
-                            player.playVideo();
-                        }
-                    }
+                if (state === 'play') {
+                    player.playVideo();
+                } else if (state === 'pause') {
+                    player.pauseVideo();
                 }
             });
         }
+
+        // 3. 어떤 방식으로 클릭해도 토글되게 만드는 강력한 이벤트 리스너
+        function toggleVideo() {
+            if (player && typeof player.getPlayerState === 'function') {
+                const state = player.getPlayerState();
+                if (state === YT.PlayerState.PLAYING) {
+                    player.pauseVideo();
+                } else {
+                    player.playVideo();
+                }
+            }
+        }
+
+        // 클릭 이벤트 (화면 아무곳이나 터치/클릭 시)
+        document.addEventListener('click', toggleVideo);
+
+        // 밴드 꼬집기 등 Enter 키 이벤트
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                toggleVideo();
+            }
+        });
+
+        // 브라우저 로드 시 포커스 강제 이동
+        window.onload = () => {
+            document.getElementById('player').focus();
+        };
     </script>
 </body>
 </html>
